@@ -3,39 +3,9 @@ data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
 
-# IAM Role for GitHub Actions
-resource "aws_iam_role" "github_actions" {
+# Reference existing IAM Role for GitHub Actions (managed outside Terraform)
+data "aws_iam_role" "github_actions" {
   name = "github-actions-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Federated = data.aws_iam_openid_connect_provider.github.arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
-          StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository_owner}/${var.github_repository_name}:*"
-          }
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name = "github-actions-role"
-  }
-
-  # Ignore changes if role already exists
-  lifecycle {
-    ignore_changes = [tags]
-  }
 }
 
 # Policy for ECR access
