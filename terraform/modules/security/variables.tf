@@ -1,12 +1,3 @@
-variable "github_repository" {
-  type        = string
-  description = "GitHub repository in format 'owner/repo' or '*' for all repos"
-  default     = "*"
-}
+# No input variables needed for this module
+# OIDC provider and role are created with defaults
 
-
-variable "github_org" {
-  type    = string
-  default = "*"
-  description = "GitHub organization"
-}
