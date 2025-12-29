@@ -10,64 +10,35 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"]
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
+# Root Module - Orchestrates all infrastructure modules
+
+module "security" {
+  source = "./modules/security"
+  
+  github_repository_owner = "CloudNexus-Org"
+  github_repository_name  = "CN-Web"
 }
 
-resource "aws_security_group" "app" {
-  name = "cloudnexus-sg"
-  ingress {
-    from_port   = 5173
-    to_port     = 5173
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+module "vpc" {
+  source = "./modules/vpc"
+
+  aws_region = var.aws_region
 }
 
-resource "aws_instance" "app" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
-  vpc_security_group_ids = [aws_security_group.app.id]
+module "ec2" {
+  source = "./modules/ec2"
 
-  user_data = base64encode(<<-EOF
-    #!/bin/bash
-    set -e
+  aws_region        = var.aws_region
+  subnet_id         = module.vpc.subnet_id
+  security_group_id = module.security.security_group_id
+  docker_image_uri  = var.docker_image_uri
+  vault_address     = var.vault_address
+  vault_token       = var.vault_token
+}
 
-    apt-get update -y
-    apt-get install -y docker.io awscli
-    systemctl start docker
-    systemctl enable docker
+module "vault" {
+  source = "./modules/vault"
 
-    ECR_REGISTRY="${join("/", slice(split("/", var.docker_image_uri), 0, 1))}"
-
-    aws ecr get-login-password --region ${var.aws_region} \
-      | docker login --username AWS --password-stdin $ECR_REGISTRY
-
-    docker run -d -p 5173:5173 \
-      -e VAULT_ADDR=${var.vault_address} \
-      -e VAULT_TOKEN=${var.vault_token} \
-      ${var.docker_image_uri}
-  EOF
-  )
-
-  tags = {
-    Name = "cloudnexus-app"
-  }
+  vault_address = var.vault_address
+  vault_token   = var.vault_token
 }
