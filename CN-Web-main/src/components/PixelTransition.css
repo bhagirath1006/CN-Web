@@ -1,0 +1,34 @@
+.pixel-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #111;
+  cursor: pointer;
+}
+
+.pixel-default,
+.pixel-active,
+.pixel-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pixel-active {
+  display: none;
+  z-index: 2;
+}
+
+.pixel-grid {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pixel {
+  position: absolute;
+  display: none;
+}
+

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  vault:
+    image: vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "myroot"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data
+    command: server -dev
+    networks:
+      - app-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cloudnexus-web
+    ports:
+      - "5173:5173"
+    depends_on:
+      vault:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      VITE_APP_API_URL: http://vault:8200
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  vault-data:
+
+networks:
+  app-network:
+    driver: bridge
