@@ -13,6 +13,7 @@ resource "aws_instance" "app" {
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [var.security_group_id]
   associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
 
   user_data = base64encode(<<-EOF
   #!/bin/bash
