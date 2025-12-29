@@ -73,12 +73,21 @@ resource "aws_iam_role_policy" "github_terraform" {
           "ec2:*",
           "ecr:*",
           "ecs:*",
-          "iam:PassRole",
           "s3:*",
           "dynamodb:*",
           "secretsmanager:*",
           "vpc:*",
           "tags:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole",
+          "iam:GetRole",
+          "iam:ListOpenIDConnectProviders",
+          "iam:GetOpenIDConnectProvider"
         ]
         Resource = "*"
       }
