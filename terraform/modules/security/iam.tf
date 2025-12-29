@@ -31,6 +31,11 @@ resource "aws_iam_role" "github_actions" {
   tags = {
     Name = "github-actions-role"
   }
+
+  # Ignore changes if role already exists
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 # Policy for ECR access

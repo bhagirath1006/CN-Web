@@ -1,3 +1,4 @@
+# ECR Repository
 resource "aws_ecr_repository" "app" {
   name                 = var.repository_name
   image_tag_mutability = "MUTABLE"
@@ -9,6 +10,14 @@ resource "aws_ecr_repository" "app" {
 
   tags = {
     Name = var.repository_name
+  }
+
+  # Ignore changes if repo already exists from previous runs
+  lifecycle {
+    ignore_changes = [
+      image_scanning_configuration,
+      tags
+    ]
   }
 }
 
