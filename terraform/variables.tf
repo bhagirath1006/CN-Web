@@ -3,10 +3,6 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
-variable "docker_image_uri" {
-  type = string
-}
-
 variable "vault_address" {
   type = string
 }

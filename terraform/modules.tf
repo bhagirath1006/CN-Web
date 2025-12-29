@@ -7,7 +7,7 @@ module "vpc" {
 
   aws_region = var.aws_region
 }
-# bhagat
+# bhagi
 module "ec2" {
   source = "./modules/ec2"
 
