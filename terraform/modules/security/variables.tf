@@ -10,9 +10,9 @@ variable "github_repository_name" {
   default     = "*"
 }
 
-variable "github_environments" {
-  type        = list(string)
-  description = "List of GitHub environments allowed to assume the role (leave empty to allow all)"
-  default     = []
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID where security group will be created"
+  default     = null
 }
 
