@@ -68,5 +68,12 @@ jobs:
         run: |
           cd terraform
           terraform init -upgrade
+          
+          # Clean up old resources to avoid AWS account limits
+          echo "Destroying old resources..."
+          terraform destroy -auto-approve || true
+          
+          # Apply fresh infrastructure
+          echo "Creating new infrastructure..."
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan

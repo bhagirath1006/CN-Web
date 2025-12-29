@@ -1,4 +1,5 @@
 # Security Group for EC2 instance
+# This is the only resource we create/destroy here
 resource "aws_security_group" "app" {
   name   = "cloudnexus-sg"
   vpc_id = var.vpc_id
