@@ -15,9 +15,9 @@ provider "aws" {
 module "security" {
   source = "./modules/security"
   
+  vpc_id                  = module.vpc.vpc_id
   github_repository_owner = "CloudNexus-Org"
   github_repository_name  = "CN-Web"
-  vpc_id                  = module.vpc.vpc_id
 }
 
 module "vpc" {
