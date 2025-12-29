@@ -20,7 +20,9 @@ resource "aws_iam_role" "github_actions" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository_owner}/${var.github_repository_name}:ref:refs/heads/feature/bhagirath"
+          }
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository_owner}/${var.github_repository_name}:*"
           }
         }
       }
