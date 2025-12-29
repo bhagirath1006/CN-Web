@@ -3,7 +3,6 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main
       - feature/bhagirath
   workflow_dispatch:
 
@@ -27,7 +26,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install and build
@@ -40,6 +39,19 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-session
+          role-duration-seconds: 3600
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Verify AWS credentials
+        run: |
+          echo "Testing AWS credentials..."
+          aws sts get-caller-identity
+          echo "AWS STS call successful!"
 
       - name: Login to ECR and push Docker image
         run: |
