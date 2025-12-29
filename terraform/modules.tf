@@ -1,5 +1,8 @@
 module "security" {
   source = "./modules/security"
+  
+  github_org        = "your-github-org"      # Change this to your GitHub org
+  github_repository = "CN-Web"                # Change this to your repository name
 }
 
 module "vpc" {
