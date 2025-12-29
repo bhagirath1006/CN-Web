@@ -11,7 +11,7 @@ data "aws_iam_role" "github_actions" {
 # Policy for ECR access
 resource "aws_iam_role_policy" "github_ecr" {
   name = "github-ecr-policy"
-  role = aws_iam_role.github_actions.id
+  role = data.aws_iam_role.github_actions.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -37,7 +37,7 @@ resource "aws_iam_role_policy" "github_ecr" {
 # Policy for Terraform
 resource "aws_iam_role_policy" "github_terraform" {
   name = "github-terraform-policy"
-  role = aws_iam_role.github_actions.id
+  role = data.aws_iam_role.github_actions.id
 
   policy = jsonencode({
     Version = "2012-10-17"
