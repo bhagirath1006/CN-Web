@@ -26,6 +26,12 @@ module "vpc" {
   aws_region = var.aws_region
 }
 
+module "ecr" {
+  source = "./modules/ecr"
+
+  repository_name = "cloudnexus-web"
+}
+
 module "ec2" {
   source = "./modules/ec2"
 
