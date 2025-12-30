@@ -70,6 +70,8 @@ resource "aws_iam_role_policy" "github_terraform" {
           "iam:GetRole",
           "iam:GetPolicy",
           "iam:PassRole",
+          "iam:GetOpenIDConnectProvider",
+          "iam:ListOpenIDConnectProviders",
           "secretsmanager:*"
         ]
         Resource = "*"
