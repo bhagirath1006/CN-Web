@@ -1,6 +1,6 @@
-# Reference existing OIDC Provider for GitHub Actions
-data "aws_iam_openid_connect_provider" "github" {
-  url = "https://token.actions.githubusercontent.com"
+# Hardcoded OIDC Provider ARN (already exists in AWS)
+locals {
+  oidc_provider_arn = "arn:aws:iam::360477615168:oidc-provider/token.actions.githubusercontent.com"
 }
 
 # Create IAM Role for GitHub Actions
@@ -13,7 +13,7 @@ resource "aws_iam_role" "github_actions" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = data.aws_iam_openid_connect_provider.github.arn
+          Federated = local.oidc_provider_arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {

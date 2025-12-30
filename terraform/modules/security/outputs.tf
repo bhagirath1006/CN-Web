@@ -13,7 +13,7 @@ output "github_actions_role_name" {
 }
 
 output "oidc_provider_arn" {
-  value       = data.aws_iam_openid_connect_provider.github.arn
+  value       = "arn:aws:iam::360477615168:oidc-provider/token.actions.githubusercontent.com"
   description = "ARN of the GitHub OIDC provider"
 }
 
