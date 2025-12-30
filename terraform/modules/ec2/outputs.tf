@@ -6,3 +6,4 @@ output "instance_id" {
   value = aws_instance.app.id
   description = "EC2 instance ID for Systems Manager Session Manager access"
 }
+#bhagi
