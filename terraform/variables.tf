@@ -27,3 +27,8 @@ variable "enable_vault" {
   type        = bool
   default     = true
 }
+
+variable "key_name" {
+  description = "SSH key pair name for EC2 instance access"
+  type        = string
+}

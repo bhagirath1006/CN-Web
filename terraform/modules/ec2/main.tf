@@ -13,26 +13,52 @@ resource "aws_instance" "app" {
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [var.security_group_id]
   associate_public_ip_address = true
-  iam_instance_profile        = data.aws_iam_instance_profile.ec2_profile.name
+  key_name                    = var.key_name
 
   user_data = base64encode(<<-EOF
-  #!/bin/bash
-  set -e
+#!/bin/bash
+set -e
 
-  apt-get update -y
-  apt-get install -y docker.io awscli
-  systemctl start docker
-  systemctl enable docker
+exec > >(tee -a /var/log/user-data.log)
+exec 2>&1
 
-  ECR_REGISTRY="${join("/", slice(split("/", var.docker_image_uri), 0, 1))}"
+echo "[$(date)] Starting user data script"
 
-  aws ecr get-login-password --region ${var.aws_region} \
-    | docker login --username AWS --password-stdin $ECR_REGISTRY
+apt-get update -y
+apt-get install -y docker.io awscli
+systemctl start docker
+systemctl enable docker
 
-  docker run -d -p 5173:5173 \
-    -e VAULT_ADDR=${var.vault_address} \
-    -e VAULT_TOKEN=${var.vault_token} \
-    ${var.docker_image_uri}
+echo "[$(date)] Docker installed and started"
+
+# Add ubuntu user to docker group
+usermod -aG docker ubuntu
+
+# Export variables from Terraform
+export DOCKER_IMAGE_URI="${var.docker_image_uri}"
+export AWS_REGION="${var.aws_region}"
+
+# Extract ECR registry using bash (runtime-safe)
+ECR_REGISTRY=$(echo "$DOCKER_IMAGE_URI" | cut -d'/' -f1)
+
+echo "[$(date)] ECR Registry: $ECR_REGISTRY"
+echo "[$(date)] Docker image URI: $DOCKER_IMAGE_URI"
+
+echo "[$(date)] Attempting ECR login"
+aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+echo "[$(date)] Pulling Docker image"
+docker pull "$DOCKER_IMAGE_URI"
+
+echo "[$(date)] Starting Docker container"
+docker run -d -p 5173:5173 \
+  -e VAULT_ADDR="${var.vault_address}" \
+  -e VAULT_TOKEN="${var.vault_token}" \
+  "$DOCKER_IMAGE_URI"
+
+echo "[$(date)] User data script completed"
+docker ps
 EOF
   )
 }

@@ -41,6 +41,7 @@ module "ec2" {
   docker_image_uri  = var.docker_image_uri
   vault_address     = var.vault_address
   vault_token       = var.vault_token
+  key_name          = var.key_name
 }
 
 module "vault" {

@@ -1,11 +1,20 @@
-# Reference existing ECR Repository (managed outside Terraform)
-data "aws_ecr_repository" "app" {
-  name = var.repository_name
+# Create ECR Repository
+resource "aws_ecr_repository" "app" {
+  name                 = var.repository_name
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = var.repository_name
+  }
 }
 
 # Lifecycle policy to clean up old images
 resource "aws_ecr_lifecycle_policy" "app" {
-  repository = data.aws_ecr_repository.app.name
+  repository = aws_ecr_repository.app.name
 
   policy = jsonencode({
     rules = [

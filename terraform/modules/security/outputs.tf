@@ -3,12 +3,12 @@ output "security_group_id" {
 }
 
 output "github_actions_role_arn" {
-  value       = data.aws_iam_role.github_actions.arn
+  value       = aws_iam_role.github_actions.arn
   description = "ARN of the GitHub Actions IAM role"
 }
 
 output "github_actions_role_name" {
-  value       = data.aws_iam_role.github_actions.name
+  value       = aws_iam_role.github_actions.name
   description = "Name of the GitHub Actions IAM role"
 }
 

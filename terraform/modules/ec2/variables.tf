@@ -22,4 +22,9 @@ variable "vault_token" {
   type      = string
   sensitive = true
 }
+
+variable "key_name" {
+  type        = string
+  description = "SSH key pair name for EC2 instance access"
+}
 #bhagi
