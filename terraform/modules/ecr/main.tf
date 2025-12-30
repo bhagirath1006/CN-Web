@@ -1,20 +1,11 @@
-# Create ECR Repository
-resource "aws_ecr_repository" "app" {
-  name                 = var.repository_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Name = var.repository_name
-  }
+# Reference existing ECR Repository (already created in AWS)
+data "aws_ecr_repository" "app" {
+  name = var.repository_name
 }
 
 # Lifecycle policy to clean up old images
 resource "aws_ecr_lifecycle_policy" "app" {
-  repository = aws_ecr_repository.app.name
+  repository = data.aws_ecr_repository.app.name
 
   policy = jsonencode({
     rules = [
