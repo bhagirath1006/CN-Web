@@ -1,10 +1,13 @@
 name: Terraform Recreate Infra
 
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - terraform/**
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - terraform/**
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
@@ -31,21 +34,11 @@ jobs:
         working-directory: terraform
         run: terraform init
 
-      - name: Terraform Destroy
-        working-directory: terraform
-        run: |
-          terraform destroy -auto-approve \
-            -var="aws_region=${{ env.AWS_REGION }}" \
-            -var="vault_address=${{ secrets.VAULT_ADDRESS }}" \
-            -var="key_name=${{ secrets.SSH_KEY_NAME }}"
-
       - name: Terraform Apply
         working-directory: terraform
         run: |
           terraform apply -auto-approve \
-            -var="aws_region=${{ env.AWS_REGION }}" \
-            -var="vault_address=${{ secrets.VAULT_ADDRESS }}" \
-            -var="key_name=${{ secrets.SSH_KEY_NAME }}"
+            -var="aws_region=${{ env.AWS_REGION }}"
 
       - name: Show Outputs
         working-directory: terraform
