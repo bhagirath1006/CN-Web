@@ -1,13 +1,10 @@
 name: Terraform Recreate Infra
 
-# on:
-#   push:
-#     branches: [main]
-#     paths:
-#       - terraform/**
-
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - terraform/**
 
 env:
   AWS_REGION: us-east-1
