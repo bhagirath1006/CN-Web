@@ -89,7 +89,7 @@ EOF
   }
 
   depends_on = [
-    aws_iam_instance_profile.ec2_profile
+    data.aws_iam_instance_profile.ec2_profile
   ]
 }
 #bhagirath
