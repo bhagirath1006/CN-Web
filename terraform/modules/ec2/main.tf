@@ -10,30 +10,15 @@ data "aws_ami" "ubuntu" {
 
 # -------------------------------
 # IAM Role for EC2 (ECR + SSM)
+# Reference existing role instead of creating
 # -------------------------------
-resource "aws_iam_role" "ec2_role" {
+data "aws_iam_role" "ec2_role" {
   name = "ec2-app-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = "sts:AssumeRole"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-    }]
-  })
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = all
-  }
 }
 
 resource "aws_iam_role_policy" "ec2_policy" {
   name = "ec2-app-policy"
-  role = aws_iam_role.ec2_role.id
+  role = data.aws_iam_role.ec2_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -52,16 +37,8 @@ resource "aws_iam_role_policy" "ec2_policy" {
   })
 }
 
-resource "aws_iam_instance_profile" "ec2_profile" {
+data "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2-app-instance-profile"
-  role = aws_iam_role.ec2_role.name
-
-  depends_on = [aws_iam_role_policy.ec2_policy]
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = all
-  }
 }
 
 # -------------------------------
@@ -73,7 +50,7 @@ resource "aws_instance" "app" {
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [var.security_group_id]
   associate_public_ip_address = true
-  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile        = data.aws_iam_instance_profile.ec2_profile.name
   key_name                    = var.key_name
 
   user_data = base64encode(<<-EOF
