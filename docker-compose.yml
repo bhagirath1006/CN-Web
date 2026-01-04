@@ -1,21 +1,22 @@
-version: '3.8'
-
 services:
-  vault:
-    image: vault:latest
-    container_name: vault
-    ports:
-      - "8200:8200"
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-dev
     environment:
-      VAULT_DEV_ROOT_TOKEN_ID: "myroot"
-      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
-    cap_add:
-      - IPC_LOCK
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: cloudnexus_dev
+    ports:
+      - "5432:5432"
     volumes:
-      - vault-data:/vault/data
-    command: server -dev
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev_user -d cloudnexus_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build:
@@ -25,13 +26,14 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      vault:
-        condition: service_started
+      postgres:
+        condition: service_healthy
     environment:
       NODE_ENV: production
-      VITE_APP_API_URL: http://vault:8200
+      VITE_APP_DB_URL: postgresql://dev_user:dev_password@postgres:5432/cloudnexus_dev
     networks:
       - app-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5173"]
       interval: 30s
@@ -40,7 +42,8 @@ services:
       start_period: 40s
 
 volumes:
-  vault-data:
+  postgres-data:
+    driver: local
 
 networks:
   app-network:

@@ -12,13 +12,7 @@ provider "aws" {
 
 # Root Module - Orchestrates all infrastructure modules
 
-module "security" {
-  source = "./modules/security"
-  
-  vpc_id                  = module.vpc.vpc_id
-  github_repository_owner = "CloudNexus-Org"
-  github_repository_name  = "CN-Web"
-}
+
 
 module "vpc" {
   source = "./modules/vpc"
@@ -35,18 +29,19 @@ module "ecr" {
 module "ec2" {
   source = "./modules/ec2"
 
-  aws_region        = var.aws_region
-  subnet_id         = module.vpc.subnet_id
-  security_group_id = module.security.security_group_id
-  docker_image_uri  = var.docker_image_uri
-  vault_address     = var.vault_address
-  vault_token       = var.vault_token
-  key_name          = var.key_name
+  aws_region      = var.aws_region
+  subnet_id       = module.vpc.subnet_id
+  security_group_id = module.vpc.security_group_id
+  ecr_registry    = module.ecr.registry_url
+  ecr_repository  = module.ecr.repository_name
+  image_tag       = var.image_tag
+  vault_address   = var.vault_address
+  key_name        = var.key_name
 }
 
 module "vault" {
   source = "./modules/vault"
 
   vault_address = var.vault_address
-  vault_token   = var.vault_token
+  vault_token   = var.vault_token 
 }

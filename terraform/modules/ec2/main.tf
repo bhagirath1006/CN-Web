@@ -1,18 +1,67 @@
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"]
+
   filter {
     name   = "name"
     values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 }
 
+# -------------------------------
+# IAM Role for EC2 (ECR + SSM)
+# -------------------------------
+resource "aws_iam_role" "ec2_role" {
+  name = "ec2-app-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "sts:AssumeRole"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "ec2_policy" {
+  name = "ec2-app-policy"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:DescribeImages",
+        "ssm:SendCommand",
+        "ssm:GetCommandInvocation"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2-app-instance-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+# -------------------------------
+# EC2 Instance
+# -------------------------------
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t2.micro"
+  instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [var.security_group_id]
   associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   key_name                    = var.key_name
 
   user_data = base64encode(<<-EOF
@@ -22,43 +71,36 @@ set -e
 exec > >(tee -a /var/log/user-data.log)
 exec 2>&1
 
-echo "[$(date)] Starting user data script"
+echo "[$(date)] EC2 bootstrap started"
 
 apt-get update -y
-apt-get install -y docker.io awscli
+apt-get install -y docker.io curl git awscli
+
 systemctl start docker
 systemctl enable docker
 
-echo "[$(date)] Docker installed and started"
-
-# Add ubuntu user to docker group
 usermod -aG docker ubuntu
 
-# Export variables from Terraform
-export DOCKER_IMAGE_URI="${var.docker_image_uri}"
-export AWS_REGION="${var.aws_region}"
+# Install Docker Compose plugin
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-# Extract ECR registry using bash (runtime-safe)
-ECR_REGISTRY=$(echo "$DOCKER_IMAGE_URI" | cut -d'/' -f1)
+# Prepare app directory
+mkdir -p /home/ubuntu/app
+chown -R ubuntu:ubuntu /home/ubuntu/app
 
-echo "[$(date)] ECR Registry: $ECR_REGISTRY"
-echo "[$(date)] Docker image URI: $DOCKER_IMAGE_URI"
-
-echo "[$(date)] Attempting ECR login"
-aws ecr get-login-password --region "$AWS_REGION" \
-  | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-
-echo "[$(date)] Pulling Docker image"
-docker pull "$DOCKER_IMAGE_URI"
-
-echo "[$(date)] Starting Docker container"
-docker run -d -p 5173:5173 \
-  -e VAULT_ADDR="${var.vault_address}" \
-  -e VAULT_TOKEN="${var.vault_token}" \
-  "$DOCKER_IMAGE_URI"
-
-echo "[$(date)] User data script completed"
-docker ps
+echo "[$(date)] EC2 bootstrap completed"
 EOF
   )
+
+  tags = {
+    Name = "cloudnexus-web-app"
+  }
+
+  depends_on = [
+    aws_iam_instance_profile.ec2_profile
+  ]
 }
+#bhagi

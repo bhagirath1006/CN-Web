@@ -1,65 +1,83 @@
 #!/bin/bash
 set -e
 
-# Update system
-apt-get update
-apt-get install -y \
-  docker.io \
-  curl \
-  wget \
-  jq \
-  git \
-  awscli
+exec > >(tee -a /var/log/user-data.log)
+exec 2>&1
 
-# Start Docker
+echo "[$(date)] Starting EC2 bootstrap"
+
+# -----------------------------
+# Install packages
+# -----------------------------
+apt-get update -y
+apt-get install -y docker.io curl wget jq git awscli
+
 systemctl start docker
 systemctl enable docker
 
-# Add Ubuntu user to docker group
 usermod -aG docker ubuntu
 
-# Create app directory
-mkdir -p /app
-cd /app
-
-# Log in to ECR
-aws ecr get-login-password --region $(ec2-metadata --availability-zone | cut -d " " -f 2 | sed 's/[a-z]$//') | \
-  docker login --username AWS --password-stdin ${docker_image_uri%/*}
-
-# Pull and run docker image
-docker pull ${docker_image_uri}
-
-# Create docker run script
-cat > /usr/local/bin/start-app.sh << 'DOCKER_SCRIPT'
-#!/bin/bash
+# -----------------------------
+# Variables injected by Terraform
+# -----------------------------
+AWS_REGION="${aws_region}"
+DOCKER_IMAGE_URI="${docker_image_uri}"
+APP_NAME="${app_name}"
+CONTAINER_PORT="${container_port}"
 VAULT_ADDR="${vault_addr}"
 VAULT_TOKEN="${vault_token}"
 
-# Get secrets from Vault
-export APP_CONFIG=$(curl -s \
+# -----------------------------
+# Login to ECR
+# -----------------------------
+echo "[$(date)] Logging into ECR"
+aws ecr get-login-password --region "$AWS_REGION" | \
+docker login --username AWS --password-stdin "${docker_image_uri%/*}"
+
+# -----------------------------
+# Pull image
+# -----------------------------
+echo "[$(date)] Pulling Docker image"
+docker pull "$DOCKER_IMAGE_URI"
+
+# -----------------------------
+# Stop old container
+# -----------------------------
+docker stop "$APP_NAME" || true
+docker rm "$APP_NAME" || true
+
+# -----------------------------
+# Fetch secrets from Vault
+# -----------------------------
+echo "[$(date)] Fetching secrets from Vault"
+APP_CONFIG=$(curl -s \
   -H "X-Vault-Token: $VAULT_TOKEN" \
-  -H "Content-Type: application/json" \
   "$VAULT_ADDR/v1/secret/data/cloudnexus/app" | jq -r '.data.data')
 
-# Run Docker container
+# -----------------------------
+# Run container
+# -----------------------------
+echo "[$(date)] Starting container"
 docker run -d \
-  --name ${app_name} \
-  -p ${container_port}:${container_port} \
+  --name "$APP_NAME" \
+  -p "$CONTAINER_PORT:$CONTAINER_PORT" \
   -e VAULT_ADDR="$VAULT_ADDR" \
-  -e VAULT_TOKEN="$VAULT_TOKEN" \
   -e APP_CONFIG="$APP_CONFIG" \
   --restart always \
-  --health-cmd="curl -f http://localhost:${container_port} || exit 1" \
+  --health-cmd="curl -f http://localhost:$CONTAINER_PORT || exit 1" \
   --health-interval=30s \
   --health-timeout=10s \
   --health-retries=3 \
-  ${docker_image_uri}
-DOCKER_SCRIPT
+  "$DOCKER_IMAGE_URI"
 
-chmod +x /usr/local/bin/start-app.sh
-
-# Start the application
-/usr/local/bin/start-app.sh
-
-# Send log to CloudWatch
-echo "Application started" > /var/log/app-startup.log
+# -----------------------------
+# Verify
+# -----------------------------
+sleep 10
+if docker ps | grep "$APP_NAME"; then
+  echo "[$(date)] Application started successfully"
+else
+  echo "[$(date)] Application failed to start"
+  docker logs "$APP_NAME"
+  exit 1
+fi

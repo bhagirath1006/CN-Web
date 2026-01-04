@@ -4,12 +4,8 @@ variable "aws_region" {
 }
 
 variable "vault_address" {
-  type = string
-}
-
-variable "vault_token" {
-  type      = string
-  sensitive = true
+  type        = string
+  description = "Vault server address"
 }
 
 variable "oidc_provider_arn" {
@@ -17,9 +13,10 @@ variable "oidc_provider_arn" {
   default = "arn:aws:iam::360477615168:oidc-provider/token.actions.githubusercontent.com"
 }
 
-variable "docker_image_uri" {
-  description = "Docker image URI (ECR)"
+variable "image_tag" {
   type        = string
+  default     = "latest"
+  description = "Docker image tag in ECR"
 }
 
 variable "enable_vault" {
@@ -31,4 +28,10 @@ variable "enable_vault" {
 variable "key_name" {
   description = "SSH key pair name for EC2 instance access"
   type        = string
+}
+
+variable "vault_token" {
+  description = "Vault authentication token"
+  type        = string
+  sensitive   = true
 }

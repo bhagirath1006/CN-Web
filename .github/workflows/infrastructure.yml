@@ -1,0 +1,55 @@
+name: Terraform Recreate Infra
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - terraform/**
+
+env:
+  AWS_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: |
+          terraform destroy -auto-approve \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="vault_address=${{ secrets.VAULT_ADDRESS }}" \
+            -var="key_name=${{ secrets.SSH_KEY_NAME }}"
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="vault_address=${{ secrets.VAULT_ADDRESS }}" \
+            -var="key_name=${{ secrets.SSH_KEY_NAME }}"
+
+      - name: Show Outputs
+        if: success() && github.event_name == 'push'
+        run: terraform output
