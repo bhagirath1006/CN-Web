@@ -1,11 +1,11 @@
 name: Terraform Infra
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - terraform/**
-      - .github/workflows/infra.yml
+#on:
+ # push:
+  #  branches: [main]
+   # paths:
+    #  - terraform/**
+     # - .github/workflows/infra.yml
 env:
   AWS_REGION: us-east-1
 
