@@ -72,4 +72,3 @@ jobs:
     docker tag $ECR_REGISTRY/cloudnexus-web:$IMAGE_TAG $ECR_REGISTRY/cloudnexus-web:latest
     docker push $ECR_REGISTRY/cloudnexus-web:$IMAGE_TAG
     docker push $ECR_REGISTRY/cloudnexus-web:latest
-
